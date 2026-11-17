@@ -1,0 +1,51 @@
+% ============================================================
+% 03_publications.tex -- publications and manuscripts
+%   \PubReconstruction  \PubCrossSection  \PubReadout
+% Each entry renders as:
+%   bold title                                              date
+%   authors
+%   venue. note
+% Put your own name in bold in the author list. Status headings (Peer-Reviewed
+% Publications, Manuscripts Under Review, ...) are \subsection lines in the
+% main file. Records and keys: see the header of 97_entries.sty.
+% ============================================================
+
+% Lead-author paper. "note" is optional and is a good place for a role tag.
+\DefinePublication{PubReconstruction}{
+    title   = {Graph Neural Networks for Vertex Reconstruction in Segmented Scintillator Detectors},
+    authors = {\textbf{J.~Doe}, A.~Smith, and J.~Roe},
+    venue   = {\textit{Journal of Example Physics} \textbf{12}, 034501 (2025), \hrefWithoutArrow{https://example.com/abs/0000.00000}{preprint:0000.00000}},
+    note    = {Lead author.},
+    date    = 2025,
+}
+
+% Long author list. The "short" form replaces it with "et al." and a count
+% that keeps your own name visible; call it with \PubCrossSection[short].
+% Math in a title is set bold with the rest of the title.
+\DefinePublication{PubCrossSection}{
+    title   = {Measurement of the Example Production Cross-Section in the $\mu^{+}\mu^{-}$ Final State at $\sqrt{s}=13$~TeV},
+    authors = {A.~Adams, B.~Baker, W.~Chen, C.~Clark, \textbf{J.~Doe}, E.~Evans, M.~Garcia, H.~Hill, K.~Jones, L.~Lee, N.~Miller, P.~Patel, J.~Roe, A.~Smith, and Y.~Young},
+    short authors = {A.~Adams \textit{et al.}\ (Example Collaboration; 15 authors, incl.\ \textbf{J.~Doe})},
+    venue   = {\textit{Example Physics Letters} \textbf{48}, 112003 (2024)},
+    note    = {Alphabetical author list; primary analyst.},
+    short note = {Primary analyst.},
+    date    = 2024,
+}
+
+% Manuscript under review: say so in the venue.
+\DefinePublication{PubReadout}{
+    title   = {A 512-Channel Silicon Photomultiplier Readout System with 150~ps Timing Resolution},
+    authors = {\textbf{J.~Doe}, L.~Lee, P.~Patel, and A.~Smith},
+    venue   = {Submitted to \textit{Example Instruments and Methods} (2026)},
+    date    = 2026,
+}
+
+% TEMPLATE for a new entry (copy, rename, fill in):
+%\DefinePublication{PubName}{
+%    title   = {Title},
+%    authors = {A.~Author, \textbf{J.~Doe}, and C.~Author},
+%    short authors = {A.~Author \textit{et al.}\ (N authors, incl.\ \textbf{J.~Doe})},   % optional
+%    venue   = {\textit{Journal Name} \textbf{Vol}, article (YYYY)},
+%    note    = {Lead author.},                                                           % optional
+%    date    = YYYY,
+%}

@@ -1,0 +1,62 @@
+% ============================================================
+% 01_education.tex -- degrees and certificates
+%   Degrees:       \PhDDegree  \BSDegree
+%   Certificates:  \CertTeaching  \CertComputing
+% Degrees and certificates are positions (\DefinePosition).
+% Records and keys: see the header of 97_entries.sty.
+% ============================================================
+
+% ------------------------------------------------------------
+% DEGREES
+% A single "date" is the completion date. \PhDDegree also has an "acad" form
+% with fewer bullets, for a page-limited document; \BSDegree's "acad" form is
+% a header-only line ("acad bullets = none").
+% ------------------------------------------------------------
+\DefinePosition{PhDDegree}{
+    title    = {Ph.D., Physics},
+    org      = {University of Example},
+    location = {Springfield, USA},
+    date     = 2024-05,
+    bullets  = {
+        \item \textbf{Thesis}: \textit{Measurement of Example Processes in the $\mu^{+}\mu^{-}$ Final State at $\sqrt{s}=13$~TeV}
+        \item \textbf{Advisor}: Dr.\ Jane Roe. \textbf{Committee}: Dr.\ Maria Garcia, Dr.\ Wei Chen, Dr.\ Lena Hill
+        \item \textbf{Relevant coursework}: Statistical Methods for Data Analysis; Detector Physics; Computational Physics
+    },
+    acad bullets = {
+        \item \textbf{Thesis}: \textit{Measurement of Example Processes in the $\mu^{+}\mu^{-}$ Final State at $\sqrt{s}=13$~TeV} (advisor: Dr.\ Jane Roe)
+    },
+}
+
+\DefinePosition{BSDegree}{
+    title    = {B.S., Physics, \textit{summa cum laude}},
+    org      = {Example State University},
+    location = {Riverton, USA},
+    date     = 2018-05,
+    bullets  = {
+        \item \textbf{Senior project}: \textit{Characterization of a Tabletop Example Detector}
+        \item Minor in Mathematics
+    },
+    acad bullets = none,
+}
+
+% ------------------------------------------------------------
+% CERTIFICATES
+% "bullets = none" (\CertComputing) gives a header-only line. A date that
+% is not a number (here "Current") prints as written.
+% ------------------------------------------------------------
+\DefinePosition{CertTeaching}{
+    title   = {Certificate in University Teaching},
+    org     = {University of Example},
+    date    = 2023-12,
+    bullets = {
+        \item 40-hour program on course design, active learning, and inclusive assessment
+    },
+    short bullets = none,
+}
+
+\DefinePosition{CertComputing}{
+    title   = {Research Computing Certification},
+    org     = {Example Computing Institute},
+    date    = {Current},
+    bullets = none,
+}

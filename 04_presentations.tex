@@ -1,0 +1,47 @@
+% ============================================================
+% 04_presentations.tex -- posters and talks
+%   Posters:  \PosterReadout
+%   Talks:    \TalkInvited  \TalkConference  \TalkSeminar
+% Each entry renders as:
+%   bold title (type)                                       date
+%   authors (if given)
+%   venue. note
+% Type headings (Invited and Contributed Talks, Poster Presentations, ...)
+% are \subsection lines in the main file. Records and keys: see the header
+% of 97_entries.sty.
+% ============================================================
+
+% Multi-author poster. The "short" form shortens the author list and the venue.
+\DefinePresentation{PosterReadout}{
+    title   = {Commissioning a 512-Channel Silicon Photomultiplier Readout System},
+    type    = {poster},
+    authors = {\textbf{J.~Doe}, L.~Lee, P.~Patel, and A.~Smith},
+    short authors = {\textbf{J.~Doe} \textit{et al.}\ (4 authors)},
+    venue   = {\textit{Example 2025: International Conference on Detector Instrumentation}, Lakeview, USA, 14--18 July 2025},
+    short venue = {\textit{Example 2025}, Lakeview, USA, 14--18 July 2025},
+    note    = {Best poster award.},
+    date    = 2025-07,
+}
+
+% Solo talks need no author list.
+\DefinePresentation{TalkInvited}{
+    title = {Machine Learning for Event Reconstruction: What Works and What Does Not},
+    type  = {invited talk},
+    venue = {\textit{Workshop on Example Methods in Particle Physics}, Riverton, USA},
+    date  = 2025-03,
+}
+
+\DefinePresentation{TalkConference}{
+    title = {Measurement of the Example Production Cross-Section in the $\mu^{+}\mu^{-}$ Final State},
+    type  = {contributed talk},
+    venue = {\textit{Annual Meeting of the Example Physical Society}, Springfield, USA},
+    note  = {On behalf of the Example Collaboration.},
+    date  = 2023-10,
+}
+
+\DefinePresentation{TalkSeminar}{
+    title = {Searching for Rare Processes with Muon Pairs},
+    type  = {colloquium},
+    venue = {\textit{Department of Physics Colloquium}, Example State University, Riverton, USA},
+    date  = 2022-11,
+}

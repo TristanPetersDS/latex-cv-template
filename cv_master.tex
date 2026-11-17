@@ -1,0 +1,103 @@
+% ============================================================
+% cv_master.tex -- the master CV: every record, in its full form.
+% A main file only selects and orders entries. The entries themselves are
+% records in the numbered data files (01_education.tex ... 08_service.tex),
+% and the layout lives in the three .sty files.
+%
+% Build:  make        (or: latexmk -pdf cv_master.tex)
+% ============================================================
+\documentclass[10pt, letterpaper]{article}
+\usepackage{99_preamble}    % page layout, header, base environments
+\usepackage{97_entries}     % the record engine: \Define... and \Name
+\usepackage{98_cv_extras}   % footer, \subsection style, \ifshort toggle
+
+\input{00_personal}         % name and contact details
+%\shorttrue                 % uncomment to leave out everything inside \ifshort\else ... \fi
+
+\begin{document}
+\input{00_content}          % loads every record; prints nothing
+
+\cvfooter                   % "Name --- Page x of y" on every page
+\makeheader
+\SetEntryForm{full}         % default form for every \Name below
+
+% ------------------------------------------------------------
+\section{Education}
+    \PhDDegree
+    \BSDegree
+
+% ------------------------------------------------------------
+\section{Research Interests}
+    \ResearchInterests
+
+% ------------------------------------------------------------
+\section{Research Experience}
+    \ResearchPostdoc
+    \ResearchPhD
+    \ResearchUndergrad
+
+% ------------------------------------------------------------
+\section{Publications}
+    \subsection{Peer-Reviewed Publications}
+    \PubReconstruction
+    \PubCrossSection
+    \subsection{Manuscripts Under Review}
+    \PubReadout
+
+% ------------------------------------------------------------
+\section{Presentations}
+    \subsection{Invited and Contributed Talks}
+    \TalkInvited
+    \TalkConference
+    \TalkSeminar
+    \subsection{Poster Presentations}
+    \PosterReadout
+
+% ------------------------------------------------------------
+\section{Teaching Experience}
+    \GuestLecturer
+    \TeachingAssistant
+    \OutreachEducator
+
+% ------------------------------------------------------------
+\section{Honors, Awards \& Funding}
+    \HonorThesisPrize
+    \HonorTravelGrant
+    \HonorFellowship
+
+% ------------------------------------------------------------
+\section{Technical Skills}
+    \SkillsTechnical
+
+% ------------------------------------------------------------
+\section{Service, Outreach \& Leadership}
+    \ServiceReviewer
+    \ServiceOrganizer[short]    % one entry in another form
+    \ServiceMentor
+
+% ------------------------------------------------------------
+\section{Professional Memberships}
+    \MemberTeachers
+    \MemberSociety
+
+% ------------------------------------------------------------
+% Optional content: left out when \shorttrue is set above.
+\ifshort\else
+\section{Other Professional Experience}
+    \JobAnalyst
+    \JobTutor
+\fi
+
+% ------------------------------------------------------------
+\section{Certifications \& Additional Training}
+    \CertTeaching
+    \CertComputing
+
+% ------------------------------------------------------------
+\section{References}
+    \RefRoe
+    \RefSmith
+    %\RefGarcia              % confirmed = false: rendering it stops the build
+    %\ReferencesOnRequest    % alternative: "Available upon request."
+
+\end{document}

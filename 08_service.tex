@@ -1,0 +1,127 @@
+% ============================================================
+% 08_service.tex -- service, memberships, other experience, references
+%   Service:      \ServiceReviewer  \ServiceOrganizer  \ServiceMentor
+%   Memberships:  \MemberSociety  \MemberTeachers
+%   Other work:   \JobAnalyst  \JobTutor
+%   References:   \ReferencesOnRequest (paragraph)
+%                 \RefRoe  \RefSmith  \RefGarcia
+% Records and keys: see the header of 97_entries.sty.
+% ============================================================
+
+% ------------------------------------------------------------
+% SERVICE, OUTREACH AND LEADERSHIP
+% ------------------------------------------------------------
+\DefinePosition{ServiceReviewer}{
+    title   = {Peer Reviewer},
+    org     = {\textit{Journal of Example Physics}; \textit{Example Instruments and Methods}},
+    start   = 2024,
+    end     = present,
+    bullets = none,
+}
+
+% cv_master.tex renders this entry in its one-line form: \ServiceOrganizer[short].
+\DefinePosition{ServiceOrganizer}{
+    title    = {Co-Organizer, Graduate Student Seminar Series},
+    org      = {Department of Physics, University of Example},
+    location = {Springfield, USA},
+    start    = 2021-09,
+    end      = 2023-05,
+    bullets  = {
+        \item Scheduled and hosted a weekly seminar of student research talks
+        \item Recruited 12 external speakers and secured departmental funding for their travel
+        \item Introduced written peer feedback for every speaker
+    },
+    short bullets = {
+        \item Ran a weekly student research seminar; recruited 12 external speakers and secured departmental travel funding
+    },
+}
+
+\DefinePosition{ServiceMentor}{
+    title    = {Mentor, Undergraduate Research Program},
+    org      = {University of Example},
+    location = {Springfield, USA},
+    start    = 2022-06,
+    end      = 2022-08,
+    bullets  = {
+        \item Mentored two summer students through a detector-calibration project and their final poster presentations
+    },
+    short bullets = none,
+}
+
+% ------------------------------------------------------------
+% PROFESSIONAL MEMBERSHIPS (header-only lines: title and date)
+% ------------------------------------------------------------
+\DefinePosition{MemberSociety}{
+    title   = {Example Physical Society},
+    start   = 2019,
+    end     = present,
+    bullets = none,
+}
+\DefinePosition{MemberTeachers}{
+    title   = {Example Association of Physics Teachers},
+    start   = 2021,
+    end     = present,
+    bullets = none,
+}
+
+% ------------------------------------------------------------
+% OTHER PROFESSIONAL EXPERIENCE (non-academic work, kept brief)
+% ------------------------------------------------------------
+\DefinePosition{JobAnalyst}{
+    title    = {Data Analyst (contract)},
+    org      = {Example Analytics, Inc.},
+    location = {Remote},
+    start    = 2018-06,
+    end      = 2019-07,
+    bullets  = {
+        \item Built a Python data-validation pipeline that raised the share of production-ready records from 65\% to 94\%
+    },
+    short bullets = none,
+}
+
+\DefinePosition{JobTutor}{
+    title    = {Mathematics and Physics Tutor},
+    org      = {Example State University},
+    location = {Riverton, USA},
+    start    = 2015-09,
+    end      = 2018-05,
+    bullets  = {
+        \item Tutored introductory physics and calculus, one-on-one and in small groups
+    },
+    short bullets = none,
+}
+
+% ------------------------------------------------------------
+% REFERENCES
+% Each referee carries "confirmed = true" or "confirmed = false". Rendering a
+% referee with "confirmed = false" stops the build, so nobody is listed
+% before they have agreed. \RefGarcia shows this: uncomment \RefGarcia in
+% cv_master.tex to see the error.
+% Until referees agree, a document can print \ReferencesOnRequest instead.
+% "email" and "phone" are optional.
+% ------------------------------------------------------------
+\DefineParagraph{ReferencesOnRequest}{%
+Available upon request.
+}
+
+\DefineReference{RefRoe}{
+    name         = {Dr.\ Jane Roe},
+    affiliation  = {Professor, Department of Physics, University of Example},
+    relationship = {Ph.D. advisor},
+    email        = {jane.roe@example.edu},
+    phone        = {(555) 555-0142},
+    confirmed    = true,
+}
+\DefineReference{RefSmith}{
+    name         = {Dr.\ Alex Smith},
+    affiliation  = {Associate Professor, Example Institute of Technology},
+    relationship = {postdoctoral supervisor},
+    email        = {alex.smith@example.edu},
+    confirmed    = true,
+}
+\DefineReference{RefGarcia}{
+    name         = {Dr.\ Maria Garcia},
+    affiliation  = {Staff Scientist, Example National Laboratory},
+    relationship = {Ph.D. thesis committee},
+    confirmed    = false,
+}

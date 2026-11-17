@@ -1,0 +1,31 @@
+% ============================================================
+% 06_honors.tex -- honors, awards, funding
+%   \HonorFellowship  \HonorThesisPrize  \HonorTravelGrant
+% One position record per award: "title" is the award, "org" the body that
+% gave it. Records and keys: see the header of 97_entries.sty.
+% ============================================================
+
+% A year-only range prints as "2021 -- 2023".
+\DefinePosition{HonorFellowship}{
+    title   = {Graduate Research Fellowship},
+    org     = {Example Science Foundation},
+    start   = 2021,
+    end     = 2023,
+    bullets = {
+        \item Three-year fellowship covering stipend and tuition; awarded to 5\% of applicants
+    },
+}
+
+\DefinePosition{HonorThesisPrize}{
+    title   = {Outstanding Doctoral Thesis Prize},
+    org     = {Department of Physics, University of Example},
+    date    = 2024,
+    bullets = none,
+}
+
+\DefinePosition{HonorTravelGrant}{
+    title   = {Early-Career Travel Grant},
+    org     = {Example Physical Society},
+    date    = 2023,
+    bullets = none,
+}

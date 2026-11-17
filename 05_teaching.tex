@@ -1,0 +1,72 @@
+% ============================================================
+% 05_teaching.tex -- teaching experience
+%   \TeachingAssistant  \GuestLecturer  \OutreachEducator
+%   Courses (listed under \TeachingAssistant): \CourseMechanics  \CourseModernLab
+% Records and keys: see the header of 97_entries.sty.
+% ============================================================
+
+% ------------------------------------------------------------
+% TEACHING ASSISTANT, WITH THE COURSES TAUGHT
+% A teaching position can list the courses taught in it. Define each course
+% with \DefineCourse, then name them in the position's "courses" key. They
+% print below the position's bullets, indented, under "Courses taught".
+% Courses are shown in the full form only, unless another form has its own
+% list ("short courses = {...}").
+% ------------------------------------------------------------
+\DefineCourse{CourseMechanics}{
+    title = {PHYS 101, Introductory Mechanics},
+    type  = {recitation},
+    date  = {Fall 2020},
+    bullets = {
+        \item Two weekly recitation sections of 25 students for the calculus-based introductory course: kinematics, Newton's laws, energy, momentum, and rotation
+    },
+}
+\DefineCourse{CourseModernLab}{
+    title = {PHYS 310, Modern Physics Laboratory},
+    type  = {laboratory},
+    date  = {Spring 2021},
+    bullets = {
+        \item One weekly four-hour laboratory section for physics majors: photoelectric effect, electron diffraction, and gamma-ray spectroscopy
+    },
+}
+
+\DefinePosition{TeachingAssistant}{
+    title    = {Graduate Teaching Assistant},
+    org      = {Department of Physics, University of Example},
+    location = {Springfield, USA},
+    start    = 2020-08,
+    end      = 2021-05,
+    bullets  = {
+        \item Led weekly recitation and laboratory sections, held office hours, and graded problem sets, lab reports, and exams
+        \item Rewrote the laboratory manual's uncertainty-analysis unit, adopted by the department for all sections
+    },
+    courses  = {CourseMechanics, CourseModernLab},
+    short bullets = {
+        \item Recitation and laboratory sections for PHYS 101 (Introductory Mechanics) and PHYS 310 (Modern Physics Laboratory): teaching, office hours, and grading
+    },
+}
+
+% ------------------------------------------------------------
+% OTHER TEACHING
+% ------------------------------------------------------------
+\DefinePosition{GuestLecturer}{
+    title    = {Guest Lecturer},
+    org      = {PHYS 520, Statistical Methods for Data Analysis, University of Example},
+    date     = {Spring 2023},
+    bullets  = {
+        \item Prepared and delivered three lectures on likelihood fits, hypothesis testing, and confidence intervals
+    },
+    short bullets = none,
+}
+
+\DefinePosition{OutreachEducator}{
+    title    = {Physics Outreach Volunteer},
+    org      = {Example State University},
+    location = {Riverton, USA},
+    start    = 2016,
+    end      = 2018,
+    bullets  = {
+        \item Ran hands-on physics demonstrations (momentum, electricity, optics) at local schools and public science nights
+    },
+    short bullets = none,
+}

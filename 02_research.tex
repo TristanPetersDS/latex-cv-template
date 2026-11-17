@@ -1,0 +1,87 @@
+% ============================================================
+% 02_research.tex -- research interests and research experience
+%   \ResearchInterests (paragraph)
+%   \ResearchPostdoc  \ResearchPhD  \ResearchUndergrad
+% Records and keys: see the header of 97_entries.sty.
+% ============================================================
+
+% RESEARCH INTERESTS (one or two lines, used in place of a summary)
+\DefineParagraph{ResearchInterests}{%
+Detector instrumentation and readout electronics; statistical methods and machine learning for event reconstruction; Monte Carlo simulation; open and reproducible scientific software.
+}
+
+% ------------------------------------------------------------
+% POSTDOCTORAL POSITION
+% This record has three forms, to show how one record serves several
+% documents:
+%   full   every bullet (the default form)
+%   acad   fewer bullets and a shorter "org" line, for a page-limited CV
+%   short  one line, for a section that a document only summarizes
+% A form uses its own value for a field ("acad org") if it has one, and the
+% plain value ("org") otherwise. Bullets are the exception: each form that is
+% rendered needs its own bullets.
+% ------------------------------------------------------------
+\DefinePosition{ResearchPostdoc}{
+    title     = {Postdoctoral Research Associate},
+    org       = {Example Collaboration, Department of Physics, Example Institute of Technology},
+    acad org  = {Example Collaboration, Example Institute of Technology},
+    short org = {Example Institute of Technology},
+    location  = {Northfield, USA},
+    start     = 2024-09,
+    end       = present,
+    bullets   = {
+        \item Lead the commissioning of a 512-channel silicon photomultiplier readout system: firmware validation, timing calibration to 150~ps, and the first cosmic-ray data-taking run
+        \item Developed a graph-neural-network event reconstruction that improves vertex resolution by 30\% over the baseline likelihood fit, validated on simulated and calibration data
+        \item Maintain the collaboration's simulation framework (C++ and Python): continuous integration, release management, and about 800 automated tests
+        \item Supervise two graduate students and one undergraduate on detector-calibration projects
+    },
+    acad bullets = {
+        \item Lead the commissioning of a 512-channel silicon photomultiplier readout system, including timing calibration to 150~ps
+        \item Developed a graph-neural-network event reconstruction that improves vertex resolution by 30\% over the baseline likelihood fit
+    },
+    short bullets = {
+        \item Commissioned a 512-channel photosensor readout system; developed a machine-learning event reconstruction; maintain the collaboration's simulation framework
+    },
+}
+
+% ------------------------------------------------------------
+% GRADUATE RESEARCH
+% A start/end range that crosses years prints as "Aug 2019 -- May 2024".
+% ------------------------------------------------------------
+\DefinePosition{ResearchPhD}{
+    title    = {Graduate Research Assistant},
+    org      = {Roe Group, Department of Physics, University of Example},
+    acad org = {Roe Group, University of Example},
+    location = {Springfield, USA},
+    start    = 2019-08,
+    end      = 2024-05,
+    bullets  = {
+        \item Measured the production cross-section of an example process in the $\mu^{+}\mu^{-}$ final state at $\sqrt{s}=13$~TeV with a total uncertainty of 4.2\%, the most precise result to date
+        \item Designed the analysis trigger strategy and estimated the dominant background from data with a control-region method
+        \item Produced and validated 40 million simulated events on a high-performance computing cluster
+        \item Presented results at a national society meeting, a department colloquium, and the collaboration's physics working group
+    },
+    acad bullets = {
+        \item Measured the production cross-section of an example process in the $\mu^{+}\mu^{-}$ final state at $\sqrt{s}=13$~TeV with a total uncertainty of 4.2\%
+        \item Designed the analysis trigger strategy and estimated the dominant background from data
+    },
+    short bullets = {
+        \item Cross-section measurement in the $\mu^{+}\mu^{-}$ final state at $\sqrt{s}=13$~TeV: trigger strategy, data-driven background estimate, and large-scale simulation
+    },
+}
+
+% ------------------------------------------------------------
+% UNDERGRADUATE RESEARCH
+% Free-text date: anything that is not YYYY or YYYY-MM prints as written.
+% ------------------------------------------------------------
+\DefinePosition{ResearchUndergrad}{
+    title    = {Undergraduate Research Fellow},
+    org      = {Example National Laboratory},
+    location = {Lakeview, USA},
+    date     = {Summer 2017},
+    bullets  = {
+        \item Measured the cosmic-ray muon lifetime with a scintillator telescope, to within 2\% of the accepted value
+    },
+    acad bullets  = none,
+    short bullets = none,
+}

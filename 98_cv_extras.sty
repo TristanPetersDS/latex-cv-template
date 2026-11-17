@@ -1,0 +1,46 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{98_cv_extras}[2026/11/17 CV footer, subsections, short toggle]
+% ============================================================
+% 98_cv_extras.sty -- additions for a multi-page CV: a page-number footer,
+% \subsection headings, and the \ifshort toggle. Load it after
+% 99_preamble.sty. A one-page resume can leave this file out.
+%
+% Entries, and the spacing between them, come from 97_entries.sty.
+% ============================================================
+
+% --- PDF title "<name> - Curriculum Vitae" (replaces the one from 99_preamble.sty) ---
+\AtBeginDocument{\hypersetup{pdftitle={\@name\space- Curriculum Vitae}}}
+
+% --- Page numbering (the preamble sets \pagenumbering{gobble}) ---
+\pagenumbering{arabic}
+
+% --- "Name --- Page x of y" footer on every page ---
+% Call \cvfooter once, after \begin{document}. \@name is set by \name{};
+% \pageref*{LastPage} comes from the lastpage package, so the document needs
+% two pdfLaTeX runs (latexmk does this).
+\newcommand{\cvfooter}{%
+  \AddToShipoutPictureFG{%
+    \put(
+        \LenToUnit{0.5\paperwidth},
+        \LenToUnit{0.55 cm}
+    ){\makebox[0pt][c]{%
+        \small\color{gray}\textit{\@name\ --- Page \thepage\ of \pageref*{LastPage}}%
+    }}%
+  }%
+}
+
+% --- Sub-headings inside a section (publication status, talk type) ---
+% Bold italic, underlined. The underline is set here, not with \uline{} in a
+% main file, so that PDF bookmarks stay free of formatting commands.
+% No \needspace here: it starts with a legal page break, which would strand
+% the section heading above. Publication and presentation entries cannot
+% split (97_entries.sty), so TeX's no-break-after-heading rule moves
+% section + subsection + first entry to the next page together.
+\titleformat{\subsection}{\bfseries\itshape\normalsize}{}{0pt}{\uline}
+\titlespacing{\subsection}{0pt}{0.15 cm}{0.08 cm}
+
+% --- Short/long toggle ---
+% Put \shorttrue in a main file, before \begin{document}, to compile a
+% trimmed version; wrap optional content in \ifshort\else ... \fi
+\newif\ifshort
+\shortfalse

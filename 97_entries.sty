@@ -1,0 +1,897 @@
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{97_entries}[2026/11/17 CV entry records]
+% ============================================================
+% 97_entries.sty -- entry records: every CV/resume entry is defined ONCE as
+% data and rendered by one shared macro per kind. Loaded by every main file,
+% after 99_preamble.sty (it renders through the preamble's twocolentry,
+% onecolentry and \positionEntries; its header row reproduces \newPosition).
+%
+% DEFINING (in the numbered data files):
+%   \DefinePosition{Name}{ key = value, ... }       jobs, degrees, certs, honors
+%   \DefineCourse{Name}{ key = value, ... }         a course taught, shown under a position
+%   \DefinePublication{Name}{ key = value, ... }    papers, manuscripts
+%   \DefinePresentation{Name}{ key = value, ... }   posters, talks
+%   \DefineReference{Name}{ key = value, ... }      referees
+%   \DefineSkills{Name}{ Label = {items}, ... }     skill blocks (ordered)
+%   \DefineParagraph{Name}{text}                    summaries, interests
+% Each \Define... creates the command \Name. A name is letters only and must
+% not be a command that already exists. Brace every value that contains a
+% comma; write \# for a # inside a URL.
+%
+% KEYS (* = required; "dates" = the date keys described under DATES, required):
+%   position      title*, org, location, bullets, courses, dates
+%   course        title*, type, bullets, dates
+%   publication   title*, authors*, venue*, note, dates
+%   presentation  title*, type*, authors, venue*, note, dates
+%   reference     name*, affiliation*, relationship*, confirmed*, email, phone
+%
+% FORMS -- one record can hold several versions of an item, one per kind of
+% document, and each main file picks the version it wants:
+%   full   everything (the default; used by a master CV)
+%   acad   a tighter version for a page-limited CV (positions and courses only)
+%   short  one line, for a section that a document shows in brief
+%   tut    wording for a resume with a different reader (positions and courses only)
+%   Skills, paragraphs and references have no forms.
+%   Any key X other than a date key can be overridden per form as "short X" /
+%   "tut X" / "acad X"; otherwise the form uses X. Dates are the same in every
+%   form. BULLETS NEVER INHERIT: a position rendered in
+%   a form needs that form's bullets ("bullets", "short bullets",
+%   "tut bullets"); use "<form> bullets = none" for a header-only line.
+%
+% COURSES -- a teaching position can carry the courses taught in it:
+%   \DefineCourse{CourseX}{ title = {PHYS 2A, General Physics}, type = {laboratory},
+%                           date = {Fall 2023}, bullets = { \item ... } }
+%   \DefinePosition{...}{ ..., courses = {CourseX, CourseY} }
+%   They print under the position's bullets, indented, under "Courses taught".
+%   Like bullets, courses never inherit: the full form shows "courses"; another
+%   form shows them only if it has its own list ("short courses = {...}").
+%
+% DATES -- always rendered in full, 3-letter months, "--" ranges:
+%   start = 2023-01, end = 2023-12   ->  Jan -- Dec 2023
+%   start = 2025-09, end = present   ->  Sep 2025 -- Present
+%   date  = 2023-12                  ->  Dec 2023
+%   date  = {Spring 2020}            ->  printed as-is (any non-numeric text)
+%   start and end must have the same precision (both YYYY or both YYYY-MM).
+%
+% USING (in a main file):
+%   \SetEntryForm{short}   document default form (initially full)
+%   \SetEntryGap{0.04cm}   space between entries (initially 0.10 cm)
+%   \SetAuthorFont{\footnotesize}  size of author lists (initially \small;
+%                          \normalsize restores the body size)
+%   \Name  or  \Name[form] print the entry, in the default form or the one named.
+%                          Entries space themselves: no gap before the first
+%                          entry after \section / \subsection.
+%
+% Every mistake (unknown or repeated key, unbraced comma, missing or malformed
+% bullets, missing required key, bad date, unknown form, bad or taken entry
+% name, unknown course, duplicate skill label, unconfirmed reference) stops
+% the build with an error.
+% ============================================================
+\RequirePackage[normalem]{ulem}
+\renewcommand{\ULthickness}{0.1pt}
+
+\ExplSyntaxOn
+
+% ------------------------------------------------------------
+% Messages
+% ------------------------------------------------------------
+\msg_new:nnn { cv-entries } { name-taken }
+  { Cannot~define~entry~'#1':~the~command~\iow_char:N\\#1~already~exists. }
+\msg_new:nnn { cv-entries } { unknown-key }
+  { Entry~'#1'~(#2):~unknown~key~'#3'.~Check~the~spelling,~and~brace~any~value~that~contains~a~comma. }
+\msg_new:nnn { cv-entries } { duplicate-key }
+  { Entry~'#1':~key~'#2'~is~given~twice. }
+\msg_new:nnn { cv-entries } { missing-value }
+  { Entry~'#1':~'#2'~has~no~value~(expected~'key~=~value').~Brace~any~value~that~contains~a~comma. }
+\msg_new:nnn { cv-entries } { missing-field }
+  { Entry~'#1'~(#2):~required~key~'#3'~is~missing. }
+\msg_new:nnn { cv-entries } { unknown-form }
+  { Entry~'#1'~(#2)~has~no~'#3'~form.~Valid~forms:~#4. }
+\msg_new:nnn { cv-entries } { no-forms }
+  { Entry~'#1'~(#2)~has~no~forms;~remove~'[#3]'. }
+\msg_new:nnn { cv-entries } { missing-bullets }
+  { Entry~'#1':~no~bullets~for~the~'#2'~form.~Add~'#3~=~{...}',~or~'#3~=~none'~for~a~header-only~entry. }
+\msg_new:nnn { cv-entries } { bad-date }
+  { Entry~'#1':~'#2~=~#3'~is~not~a~valid~date.~Use~YYYY~or~YYYY-MM~(month~01-12)#4. }
+\msg_new:nnn { cv-entries } { date-order }
+  { Entry~'#1':~end~date~'#3'~is~before~start~date~'#2'. }
+\msg_new:nnn { cv-entries } { date-keys }
+  { Entry~'#1':~#2 }
+\msg_new:nnn { cv-entries } { bad-bool }
+  { Entry~'#1':~'#2'~must~be~true~or~false,~not~'#3'. }
+\msg_new:nnn { cv-entries } { unconfirmed }
+  { Reference~'#1'~is~marked~'confirmed~=~false'.~Only~render~referees~who~have~agreed~to~serve. }
+\msg_new:nnn { cv-entries } { bad-name }
+  { Cannot~define~entry~'#1':~entry~names~must~be~letters~only~(A-Z,~a-z),~so~that~\iow_char:N\\#1~can~be~called. }
+\msg_new:nnn { cv-entries } { bad-bullets }
+  { Entry~'#1':~'#2'~#3 }
+\msg_new:nnn { cv-entries } { unknown-course }
+  { Entry~'#1'~lists~the~course~'#2',~which~is~not~a~\iow_char:N\\DefineCourse~record. }
+\msg_new:nnn { cv-entries } { duplicate-label }
+  { Skills~'#1':~label~'#2'~is~given~twice. }
+\msg_new:nnn { cv-entries } { bad-form }
+  { \iow_char:N\\SetEntryForm:~unknown~form~'#1'~(use~full,~acad,~short,~or~tut). }
+
+\cs_generate_variant:Nn \msg_error:nnnn   { nnee, nnen }
+\cs_generate_variant:Nn \msg_error:nnnnn  { nneee, nnnne, nnnee }
+\cs_generate_variant:Nn \msg_error:nnnnnn { nneeee }
+\cs_generate_variant:Nn \prop_put:Nnn     { Nne, NnV, NVn }
+\cs_generate_variant:Nn \regex_match:nnTF { nV }
+
+% ------------------------------------------------------------
+% Kind configuration
+%   _forms    forms the kind can be rendered in (empty = formless)
+%   _text     keys that may be overridden per form ("short title", ...)
+%   _fixed    keys shared by every form
+%   _required keys every record of the kind must give
+% ------------------------------------------------------------
+\clist_const:Nn \c__cv_all_forms_clist { full, acad, short, tut }
+
+\clist_const:Nn \c__cv_position_forms_clist    { full, acad, short, tut }
+\clist_const:Nn \c__cv_position_text_clist     { title, org, location, bullets, courses }
+\clist_const:Nn \c__cv_position_fixed_clist    { start, end, date }
+\clist_const:Nn \c__cv_position_required_clist { title }
+
+% Courses: sub-entries of a position (the courses taught in a teaching role).
+% A position lists them with "courses = {NameA, NameB}".
+\clist_const:Nn \c__cv_course_forms_clist    { full, acad, short, tut }
+\clist_const:Nn \c__cv_course_text_clist     { title, type, bullets }
+\clist_const:Nn \c__cv_course_fixed_clist    { start, end, date }
+\clist_const:Nn \c__cv_course_required_clist { title }
+
+\clist_const:Nn \c__cv_publication_forms_clist    { full, short }
+\clist_const:Nn \c__cv_publication_text_clist     { title, authors, venue, note }
+\clist_const:Nn \c__cv_publication_fixed_clist    { date }
+\clist_const:Nn \c__cv_publication_required_clist { title, authors, venue }
+
+\clist_const:Nn \c__cv_presentation_forms_clist    { full, short }
+\clist_const:Nn \c__cv_presentation_text_clist     { title, type, authors, venue, note }
+\clist_const:Nn \c__cv_presentation_fixed_clist    { date }
+\clist_const:Nn \c__cv_presentation_required_clist { title, type, venue }
+
+\clist_const:Nn \c__cv_reference_forms_clist    { }
+\clist_const:Nn \c__cv_reference_text_clist     { }
+\clist_const:Nn \c__cv_reference_fixed_clist    { name, affiliation, relationship, email, phone, confirmed }
+\clist_const:Nn \c__cv_reference_required_clist { name, affiliation, relationship, confirmed }
+
+\clist_const:Nn \c__cv_skills_forms_clist    { }
+\clist_const:Nn \c__cv_paragraph_forms_clist { }
+
+% Kinds that carry a date (the date keys are required for these)
+\clist_const:Nn \c__cv_dated_kinds_clist { position, course, publication, presentation }
+
+\clist_const:Nn \c__cv_month_names_clist
+  { Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec }
+
+% ------------------------------------------------------------
+% Variables
+% ------------------------------------------------------------
+\tl_new:N   \g__cv_form_tl
+\tl_gset:Nn \g__cv_form_tl { full }
+\dim_new:N  \g__cv_gap_dim
+\dim_gset:Nn \g__cv_gap_dim { 0.10 cm }
+\dim_const:Nn \c__cv_bullet_gap_dim { 0.10 cm }   % between a position header and its bullets
+\dim_const:Nn \c__cv_course_indent_dim { 0.45 cm }  % nested courses sit this far in from the position
+\dim_const:Nn \c__cv_work_date_dim   { 2.2 cm }    % date column of publications / presentations
+\tl_new:N   \g__cv_author_font_tl                 % author lists of publications / presentations
+\tl_gset:Nn \g__cv_author_font_tl { \small }
+\bool_new:N \g__cv_first_bool
+\bool_gset_true:N \g__cv_first_bool
+
+\tl_new:N   \l__cv_kind_tl
+\tl_new:N   \l__cv_name_tl
+\tl_new:N   \l__cv_form_tl
+\prop_new:N \l__cv_rec_prop
+\str_new:N  \l__cv_key_str
+\seq_new:N  \l__cv_parts_seq
+\seq_new:N  \l__cv_lines_seq
+\seq_new:N  \l__cv_labels_seq
+\bool_new:N \l__cv_found_bool
+\bool_new:N \l__cv_has_bullets_bool
+\tl_new:N   \l__cv_title_tl
+\tl_new:N   \l__cv_org_tl
+\tl_new:N   \l__cv_location_tl
+\tl_new:N   \l__cv_type_tl
+\tl_new:N   \l__cv_authors_tl
+\tl_new:N   \l__cv_venue_tl
+\tl_new:N   \l__cv_note_tl
+\tl_new:N   \l__cv_date_tl
+\tl_new:N   \l__cv_bullets_tl
+\tl_new:N   \l__cv_bkey_tl
+\tl_new:N   \l__cv_courses_tl
+\clist_new:N \l__cv_courses_clist
+\tl_new:N   \l__cv_body_tl
+\tl_new:N   \l__cv_tmp_tl
+\tl_new:N   \l__cv_month_tl
+\tl_new:N   \l__cv_start_tl
+\tl_new:N   \l__cv_end_tl
+\int_new:N  \l__cv_sy_int
+\int_new:N  \l__cv_sm_int
+\int_new:N  \l__cv_ey_int
+\int_new:N  \l__cv_em_int
+\int_new:N  \l__cv_y_int
+\int_new:N  \l__cv_m_int
+
+% ------------------------------------------------------------
+% Helpers
+% ------------------------------------------------------------
+
+% \__cv_in:nnTF {string} {clist-name}: is the string an item of
+% \c__cv_<clist-name>_clist? Compared as strings, so catcodes never matter.
+\prg_new_protected_conditional:Npnn \__cv_in:nn #1#2 { T, F, TF }
+  {
+    \bool_set_false:N \l__cv_found_bool
+    \clist_map_inline:cn { c__cv_ #2 _clist }
+      {
+        \str_if_eq:eeT {##1} {#1}
+          { \bool_set_true:N \l__cv_found_bool \clist_map_break: }
+      }
+    \bool_if:NTF \l__cv_found_bool \prg_return_true: \prg_return_false:
+  }
+\prg_generate_conditional_variant:Nnn \__cv_in:nn { ee } { T, F, TF }
+
+% Is #1 a valid key for the current kind? Either a text/fixed key, or
+% "<form> <text key>" with <form> one of the kind's forms other than full.
+\prg_new_protected_conditional:Npnn \__cv_key_valid:n #1 { TF }
+  {
+    \regex_extract_once:nnNTF { \A(\S+)\s+(\S.*)\Z } {#1} \l__cv_parts_seq
+      {
+        \str_if_eq:eeTF { \seq_item:Nn \l__cv_parts_seq {2} } { full }
+          { \prg_return_false: }
+          {
+            \__cv_in:eeTF { \seq_item:Nn \l__cv_parts_seq {2} } { \l__cv_kind_tl _forms }
+              {
+                \__cv_in:eeTF { \seq_item:Nn \l__cv_parts_seq {3} } { \l__cv_kind_tl _text }
+                  { \prg_return_true: } { \prg_return_false: }
+              }
+              { \prg_return_false: }
+          }
+      }
+      {
+        \__cv_in:eeTF {#1} { \l__cv_kind_tl _text }
+          { \prg_return_true: }
+          {
+            \__cv_in:eeTF {#1} { \l__cv_kind_tl _fixed }
+              { \prg_return_true: } { \prg_return_false: }
+          }
+      }
+  }
+
+% Key-value handlers for \keyval_parse
+\cs_new_protected:Npn \__cv_key_novalue:n #1
+  { \msg_error:nnee { cv-entries } { missing-value } { \l__cv_name_tl } { \tl_to_str:n {#1} } }
+
+\cs_new_protected:Npn \__cv_key_value:nn #1#2
+  {
+    \str_set:Nn \l__cv_key_str {#1}
+    \prop_if_in:NVTF \l__cv_rec_prop \l__cv_key_str
+      { \msg_error:nnee { cv-entries } { duplicate-key } { \l__cv_name_tl } { \l__cv_key_str } }
+      {
+        \__cv_key_valid:VTF \l__cv_key_str
+          { \prop_put:NVn \l__cv_rec_prop \l__cv_key_str {#2} }
+          {
+            \msg_error:nneee { cv-entries } { unknown-key }
+              { \l__cv_name_tl } { \l__cv_kind_tl } { \l__cv_key_str }
+          }
+      }
+  }
+\prg_generate_conditional_variant:Nnn \__cv_key_valid:n { V } { TF }
+
+% Fetch field #3 of record #1 for form #2 into #4: "<form> <field>" if
+% present, else "<field>", else empty.
+\cs_new_protected:Npn \__cv_get:nnnN #1#2#3#4
+  {
+    \prop_get:cnNF { g__cv_rec_#1_prop } { #2 ~ #3 } #4
+      {
+        \prop_get:cnNF { g__cv_rec_#1_prop } {#3} #4
+          { \tl_clear:N #4 }
+      }
+  }
+
+% Automatic spacing: no gap before the first entry after a (sub)section.
+\cs_new_protected:Npn \__cv_gap:
+  {
+    \bool_if:NTF \g__cv_first_bool
+      { \bool_gset_false:N \g__cv_first_bool }
+      { \vspace { \g__cv_gap_dim } }
+  }
+\AddToHook { cmd / section / before }    { \bool_gset_true:N \g__cv_first_bool }
+\AddToHook { cmd / subsection / before } { \bool_gset_true:N \g__cv_first_bool }
+
+% ------------------------------------------------------------
+% Dates
+% ------------------------------------------------------------
+
+% \__cv_parse_date:nTF {value}: sets \l__cv_y_int / \l__cv_m_int
+% (month 0 = year only). False if the value is not YYYY or YYYY-MM.
+\prg_new_protected_conditional:Npnn \__cv_parse_date:n #1 { TF }
+  {
+    \regex_extract_once:nnNTF { \A(\d{4})(?:-(\d{1,2}))?\Z } {#1} \l__cv_parts_seq
+      {
+        \int_set:Nn \l__cv_y_int { \seq_item:Nn \l__cv_parts_seq {2} }
+        \tl_set:Ne \l__cv_month_tl { \seq_item:Nn \l__cv_parts_seq {3} }
+        \tl_if_empty:NTF \l__cv_month_tl
+          { \int_zero:N \l__cv_m_int \prg_return_true: }
+          {
+            \int_set:Nn \l__cv_m_int { \l__cv_month_tl }
+            \bool_lazy_or:nnTF
+              { \int_compare_p:nNn { \l__cv_m_int } < { 1 } }
+              { \int_compare_p:nNn { \l__cv_m_int } > { 12 } }
+              { \prg_return_false: } { \prg_return_true: }
+          }
+      }
+      { \prg_return_false: }
+  }
+
+% "Mon YYYY" or "YYYY"
+\cs_new:Npn \__cv_fmt:nn #1#2
+  {
+    \int_compare:nNnTF {#2} = { 0 }
+      { \int_eval:n {#1} }
+      { \clist_item:Nn \c__cv_month_names_clist {#2} ~ \int_eval:n {#1} }
+  }
+
+% Parse the date keys of the record being defined into its "@date" field.
+% "@date" starts as a visible "??" so an entry whose date failed to parse
+% still renders (after the error) instead of breaking the build.
+\cs_new_protected:Npn \__cv_make_date:
+  {
+    \prop_put:Nnn \l__cv_rec_prop { @date } { ?? }
+    \prop_if_in:NnTF \l__cv_rec_prop { date }
+      {
+        \bool_lazy_or:nnTF
+          { \prop_if_in_p:Nn \l__cv_rec_prop { start } }
+          { \prop_if_in_p:Nn \l__cv_rec_prop { end } }
+          { \__cv_date_error:n { give~either~'date'~or~'start'/'end',~not~both. } }
+          { \__cv_make_point: }
+      }
+      {
+        \prop_if_in:NnTF \l__cv_rec_prop { start }
+          {
+            \prop_if_in:NnTF \l__cv_rec_prop { end }
+              { \__cv_make_range: }
+              { \__cv_date_error:n { 'start'~needs~an~'end'~(or~'end~=~present');~use~'date'~for~a~single~date. } }
+          }
+          {
+            \prop_if_in:NnTF \l__cv_rec_prop { end }
+              { \__cv_date_error:n { 'end'~needs~a~'start';~use~'date'~for~a~single~date. } }
+              { \__cv_date_error:n { a~date~is~required:~give~'date',~or~'start'~and~'end'. } }
+          }
+      }
+  }
+\cs_new_protected:Npn \__cv_date_error:n #1
+  { \msg_error:nnen { cv-entries } { date-keys } { \l__cv_name_tl } {#1} }
+
+% date = YYYY / YYYY-MM, or free text (Spring 2020, Current).
+\cs_new_protected:Npn \__cv_make_point:
+  {
+    \prop_get:NnN \l__cv_rec_prop { date } \l__cv_tmp_tl
+    \tl_trim_spaces:N \l__cv_tmp_tl
+    \__cv_parse_date:eTF { \tl_to_str:N \l__cv_tmp_tl }
+      {
+        \prop_put:Nne \l__cv_rec_prop { @date }
+          { \__cv_fmt:nn { \l__cv_y_int } { \l__cv_m_int } }
+      }
+      {
+        \tl_if_empty:NTF \l__cv_tmp_tl
+          { \__cv_date_error:n { 'date'~is~empty. } }
+          {
+            \str_if_eq:eeTF { \str_lowercase:f { \tl_to_str:N \l__cv_tmp_tl } } { present }
+              { \__cv_date_error:n { 'date~=~present'~is~not~a~date;~use~'start'~and~'end~=~present'. } }
+              {
+                % Digits and separators that fail to parse are a typo, not free text.
+                \regex_match:nVTF { \A[\d\-\s/\.]+\Z } \l__cv_tmp_tl
+                  {
+                    \msg_error:nneeee { cv-entries } { bad-date } { \l__cv_name_tl }
+                      { date } { \tl_to_str:N \l__cv_tmp_tl } { ,~or~any~text~such~as~Spring~2020 }
+                  }
+                  { \prop_put:NnV \l__cv_rec_prop { @date } \l__cv_tmp_tl }
+              }
+          }
+      }
+  }
+
+% start/end. Both ends must have the same precision (YYYY or YYYY-MM), so
+% the column never mixes "2023 -- Dec 2023"; end may be "present".
+\cs_new_protected:Npn \__cv_make_range:
+  {
+    \prop_get:NnN \l__cv_rec_prop { start } \l__cv_start_tl
+    \prop_get:NnN \l__cv_rec_prop { end }   \l__cv_end_tl
+    \tl_trim_spaces:N \l__cv_start_tl
+    \tl_trim_spaces:N \l__cv_end_tl
+    \__cv_parse_date:eTF { \tl_to_str:N \l__cv_start_tl }
+      {
+        \int_set_eq:NN \l__cv_sy_int \l__cv_y_int
+        \int_set_eq:NN \l__cv_sm_int \l__cv_m_int
+        \str_if_eq:eeTF { \str_lowercase:f { \tl_to_str:N \l__cv_end_tl } } { present }
+          {
+            \prop_put:Nne \l__cv_rec_prop { @date }
+              { \__cv_fmt:nn { \l__cv_sy_int } { \l__cv_sm_int } ~--~ Present }
+          }
+          {
+            \__cv_parse_date:eTF { \tl_to_str:N \l__cv_end_tl }
+              {
+                \int_set_eq:NN \l__cv_ey_int \l__cv_y_int
+                \int_set_eq:NN \l__cv_em_int \l__cv_m_int
+                \bool_xor:nnTF
+                  { \int_compare_p:nNn { \l__cv_sm_int } = { 0 } }
+                  { \int_compare_p:nNn { \l__cv_em_int } = { 0 } }
+                  { \__cv_date_error:n { 'start'~and~'end'~must~both~be~YYYY~or~both~be~YYYY-MM. } }
+                  { \__cv_store_range: }
+              }
+              {
+                \msg_error:nneeee { cv-entries } { bad-date } { \l__cv_name_tl }
+                  { end } { \tl_to_str:N \l__cv_end_tl } { ,~or~present }
+              }
+          }
+      }
+      {
+        \msg_error:nneeee { cv-entries } { bad-date } { \l__cv_name_tl }
+          { start } { \tl_to_str:N \l__cv_start_tl } { }
+      }
+  }
+
+% Same-year ranges share the year: "Jan -- Dec 2023"; same month: "Jun 2023";
+% same year, year-only: "2023".
+\cs_new_protected:Npn \__cv_store_range:
+  {
+    \bool_lazy_or:nnTF
+      { \int_compare_p:nNn { \l__cv_ey_int } < { \l__cv_sy_int } }
+      {
+        \bool_lazy_and_p:nn
+          { \int_compare_p:nNn { \l__cv_ey_int } = { \l__cv_sy_int } }
+          { \int_compare_p:nNn { \l__cv_em_int } < { \l__cv_sm_int } }
+      }
+      {
+        \msg_error:nneee { cv-entries } { date-order } { \l__cv_name_tl }
+          { \tl_to_str:N \l__cv_start_tl } { \tl_to_str:N \l__cv_end_tl }
+      }
+      {
+        \prop_put:Nne \l__cv_rec_prop { @date }
+          {
+            \int_compare:nNnTF { \l__cv_sy_int } = { \l__cv_ey_int }
+              {
+                \int_compare:nNnTF { \l__cv_sm_int } = { \l__cv_em_int }
+                  { \__cv_fmt:nn { \l__cv_sy_int } { \l__cv_sm_int } }
+                  {
+                    \clist_item:Nn \c__cv_month_names_clist { \l__cv_sm_int } ~--~
+                    \__cv_fmt:nn { \l__cv_ey_int } { \l__cv_em_int }
+                  }
+              }
+              {
+                \__cv_fmt:nn { \l__cv_sy_int } { \l__cv_sm_int } ~--~
+                \__cv_fmt:nn { \l__cv_ey_int } { \l__cv_em_int }
+              }
+          }
+      }
+  }
+\prg_generate_conditional_variant:Nnn \__cv_parse_date:n { e } { TF }
+
+% ------------------------------------------------------------
+% Defining records
+% ------------------------------------------------------------
+
+% \__cv_name_ok:nTF {Name}: letters only, and not an existing command.
+\prg_new_protected_conditional:Npnn \__cv_name_ok:n #1 { T, TF }
+  {
+    \tl_set:Nn \l__cv_name_tl {#1}
+    \regex_match:nnTF { \A[A-Za-z]+\Z } {#1}
+      {
+        \cs_if_exist:cTF {#1}
+          { \msg_error:nnn { cv-entries } { name-taken } {#1} \prg_return_false: }
+          { \prg_return_true: }
+      }
+      { \msg_error:nnn { cv-entries } { bad-name } {#1} \prg_return_false: }
+  }
+
+% \__cv_define:nnn {kind} {Name} {key = value list}
+\cs_new_protected:Npn \__cv_define:nnn #1#2#3
+  {
+    \tl_set:Nn \l__cv_kind_tl {#1}
+    \__cv_name_ok:nT {#2}
+      {
+        \prop_clear:N \l__cv_rec_prop
+        \keyval_parse:nnn { \__cv_key_novalue:n } { \__cv_key_value:nn } {#3}
+        \clist_map_inline:cn { c__cv_ #1 _required_clist }
+          {
+            \prop_if_in:NnF \l__cv_rec_prop {##1}
+              { \msg_error:nnnnn { cv-entries } { missing-field } {#2} {#1} {##1} }
+          }
+        \__cv_in:nnT {#1} { dated_kinds } { \__cv_make_date: }
+        \str_if_eq:nnT {#1} { reference } { \__cv_check_confirmed: }
+        \prop_put:Nnn \l__cv_rec_prop { @kind } {#1}
+        \__cv_finish:nn {#1} {#2}
+      }
+  }
+
+% References: confirmed must be exactly true or false (checked at definition,
+% so a typo is caught even for a referee no document renders yet).
+\cs_new_protected:Npn \__cv_check_confirmed:
+  {
+    \prop_get:NnNT \l__cv_rec_prop { confirmed } \l__cv_tmp_tl
+      {
+        \tl_trim_spaces:N \l__cv_tmp_tl
+        \prop_put:NnV \l__cv_rec_prop { confirmed } \l__cv_tmp_tl
+        \bool_lazy_or:nnF
+          { \str_if_eq_p:Vn \l__cv_tmp_tl { true } }
+          { \str_if_eq_p:Vn \l__cv_tmp_tl { false } }
+          {
+            \msg_error:nneee { cv-entries } { bad-bool } { \l__cv_name_tl } { confirmed }
+              { \tl_to_str:N \l__cv_tmp_tl }
+          }
+      }
+  }
+
+% Store the record and create \Name[form].
+\cs_new_protected:Npn \__cv_finish:nn #1#2
+  {
+    \prop_new:c { g__cv_rec_#2_prop }
+    \prop_gset_eq:cN { g__cv_rec_#2_prop } \l__cv_rec_prop
+    \exp_args:Nc \NewDocumentCommand {#2} { o }
+      { \__cv_dispatch:nnn {#1} {#2} {##1} }
+  }
+
+% Resolve the form and call \__cv_render_<kind>:nn {Name} {form}.
+\cs_new_protected:Npn \__cv_dispatch:nnn #1#2#3
+  {
+    \tl_if_empty:cTF { c__cv_ #1 _forms_clist }
+      {
+        \tl_if_novalue:nF {#3}
+          { \msg_error:nnnnn { cv-entries } { no-forms } {#2} {#1} {#3} }
+        \use:c { __cv_render_#1:nn } {#2} { full }
+      }
+      {
+        \tl_if_novalue:nTF {#3}
+          { \tl_set_eq:NN \l__cv_form_tl \g__cv_form_tl }
+          { \tl_set:Ne \l__cv_form_tl { \tl_trim_spaces:n {#3} } }
+        \__cv_in:eeTF { \l__cv_form_tl } { #1 _forms }
+          { \use:c { __cv_render_#1:nV } {#2} \l__cv_form_tl }
+          {
+            \msg_error:nneeee { cv-entries } { unknown-form } {#2} {#1}
+              { \l__cv_form_tl } { \clist_use:cn { c__cv_ #1 _forms_clist } { ,~ } }
+          }
+      }
+  }
+
+\NewDocumentCommand \DefinePosition     { m +m } { \__cv_define:nnn { position }     {#1} {#2} }
+\NewDocumentCommand \DefineCourse       { m +m } { \__cv_define:nnn { course }       {#1} {#2} }
+\NewDocumentCommand \DefinePublication  { m +m } { \__cv_define:nnn { publication }  {#1} {#2} }
+\NewDocumentCommand \DefinePresentation { m +m } { \__cv_define:nnn { presentation } {#1} {#2} }
+\NewDocumentCommand \DefineReference    { m +m } { \__cv_define:nnn { reference }    {#1} {#2} }
+
+% \DefineParagraph{Name}{text}
+\NewDocumentCommand \DefineParagraph { m +m }
+  {
+    \__cv_name_ok:nT {#1}
+      {
+        \prop_clear:N \l__cv_rec_prop
+        \prop_put:Nnn \l__cv_rec_prop { @body } {#2}
+        \__cv_finish:nn { paragraph } {#1}
+      }
+  }
+
+% \DefineSkills{Name}{ Label = {items}, ... } -- labels print bold, in order.
+\NewDocumentCommand \DefineSkills { m +m }
+  {
+    \__cv_name_ok:nT {#1}
+      {
+        \seq_clear:N \l__cv_lines_seq
+        \seq_clear:N \l__cv_labels_seq
+        \keyval_parse:nnn { \__cv_key_novalue:n } { \__cv_skill_line:nn } {#2}
+        \prop_clear:N \l__cv_rec_prop
+        \prop_put:Nne \l__cv_rec_prop { @body }
+          { \seq_use:Nn \l__cv_lines_seq { \\ } }
+        \__cv_finish:nn { skills } {#1}
+      }
+  }
+\cs_new_protected:Npn \__cv_skill_line:nn #1#2
+  {
+    \str_set:Nn \l__cv_key_str {#1}
+    \seq_if_in:NVTF \l__cv_labels_seq \l__cv_key_str
+      { \msg_error:nnee { cv-entries } { duplicate-label } { \l__cv_name_tl } { \l__cv_key_str } }
+      {
+        \seq_put_right:NV \l__cv_labels_seq \l__cv_key_str
+        \seq_put_right:Nn \l__cv_lines_seq { \textbf {#1} : ~ #2 }
+      }
+  }
+
+% ------------------------------------------------------------
+% Renderers: \__cv_render_<kind>:nn {Name} {form}
+% ------------------------------------------------------------
+
+\cs_new_protected:Npn \__cv_entries:n #1 { \positionEntries {#1} }
+\cs_generate_variant:Nn \__cv_entries:n { V }
+
+% Two-column row: #2 on the left, bold date #1 right-aligned (the
+% preamble's twocolentry, exactly as \newPosition uses it).
+\cs_new_protected:Npn \__cv_twocol:nn #1#2
+  { \begin{twocolentry} { \textbf {#1} } #2 \end{twocolentry} }
+\cs_generate_variant:Nn \__cv_twocol:nn { VV }
+
+\cs_new_protected:Npn \__cv_onecol:n #1
+  { \begin{onecolentry} #1 \end{onecolentry} }
+\cs_generate_variant:Nn \__cv_onecol:n { V }
+
+% Position header row -- same output as the preamble's \newPosition
+% ("**Title** | Org -- /Location/"), except the location dash is tied to
+% both neighbours, so a wrapped header never ends a line on "--".
+\cs_new_protected:Npn \__cv_position_header:
+  {
+    \tl_set:Ne \l__cv_body_tl { \exp_not:N \textbf { \exp_not:V \l__cv_title_tl } }
+    \tl_if_empty:NF \l__cv_org_tl
+      {
+        \tl_put_right:Nn \l__cv_body_tl { \ | \ }
+        \tl_put_right:NV \l__cv_body_tl \l__cv_org_tl
+      }
+    \tl_if_empty:NF \l__cv_location_tl
+      {
+        \tl_put_right:Nn \l__cv_body_tl { \nobreak \ -- \nobreakspace }
+        \tl_put_right:Ne \l__cv_body_tl
+          { \exp_not:N \textit { \exp_not:V \l__cv_location_tl } }
+      }
+    \__cv_twocol:VV \l__cv_date_tl \l__cv_body_tl
+  }
+
+% Fetch this form's bullets of record #1 into \l__cv_bullets_tl (strict: they
+% never inherit, must be given, and must be a list of \item or "none").
+% Sets \l__cv_has_bullets_bool.
+\cs_new_protected:Npn \__cv_fetch_bullets:nn #1#2
+  {
+    \str_if_eq:nnTF {#2} { full }
+      { \tl_set:Nn \l__cv_bkey_tl { bullets } }
+      { \tl_set:Nn \l__cv_bkey_tl { #2 ~ bullets } }
+    \bool_set_false:N \l__cv_has_bullets_bool
+    \prop_get:cVNTF { g__cv_rec_#1_prop } \l__cv_bkey_tl \l__cv_bullets_tl
+      {
+        \tl_trim_spaces:N \l__cv_bullets_tl
+        \str_if_eq:eeF { \str_lowercase:f { \tl_to_str:N \l__cv_bullets_tl } } { none }
+          {
+            \tl_if_empty:NTF \l__cv_bullets_tl
+              {
+                \msg_error:nnnee { cv-entries } { bad-bullets } {#1} { \l__cv_bkey_tl }
+                  { is~empty;~write~'none'~for~a~header-only~entry. }
+              }
+              {
+                \tl_if_in:NnTF \l__cv_bullets_tl { \item }
+                  { \bool_set_true:N \l__cv_has_bullets_bool }
+                  {
+                    \msg_error:nnnee { cv-entries } { bad-bullets } {#1} { \l__cv_bkey_tl }
+                      { must~be~a~list~of~\iow_char:N\\item~lines,~or~'none'. }
+                  }
+              }
+          }
+      }
+      { \msg_error:nnnne { cv-entries } { missing-bullets } {#1} {#2} { \l__cv_bkey_tl } }
+  }
+
+% Positions: header row, this form's bullets, then this form's courses.
+% Courses never inherit either: the full form shows "courses", another form
+% shows them only if it has its own "<form> courses" list.
+\cs_new_protected:Npn \__cv_render_position:nn #1#2
+  {
+    \__cv_get:nnnN {#1} {#2} { title }    \l__cv_title_tl
+    \__cv_get:nnnN {#1} {#2} { org }      \l__cv_org_tl
+    \__cv_get:nnnN {#1} {#2} { location } \l__cv_location_tl
+    \__cv_get:nnnN {#1} {#2} { @date }    \l__cv_date_tl
+    \__cv_fetch_bullets:nn {#1} {#2}
+    \__cv_gap:
+    \__cv_position_header:
+    \bool_if:NT \l__cv_has_bullets_bool
+      {
+        \vspace { \c__cv_bullet_gap_dim }
+        \__cv_entries:V \l__cv_bullets_tl
+      }
+    \str_if_eq:nnTF {#2} { full }
+      { \tl_set:Nn \l__cv_bkey_tl { courses } }
+      { \tl_set:Nn \l__cv_bkey_tl { #2 ~ courses } }
+    \prop_get:cVNT { g__cv_rec_#1_prop } \l__cv_bkey_tl \l__cv_courses_tl
+      {
+        \tl_trim_spaces:N \l__cv_courses_tl
+        \str_if_eq:eeF { \str_lowercase:f { \tl_to_str:N \l__cv_courses_tl } } { none }
+          {
+            \clist_set:NV \l__cv_courses_clist \l__cv_courses_tl
+            \clist_if_empty:NF \l__cv_courses_clist
+              { \__cv_courses_block:nn {#1} {#2} }
+          }
+      }
+  }
+\cs_generate_variant:Nn \__cv_render_position:nn { nV }
+
+% Courses nested under a position: a small label, then one row per course
+% (bold title, type tag, bold term on the right) with its bullets, all set in
+% from the position by \c__cv_course_indent_dim. #1 = position, #2 = form.
+\cs_new_protected:Npn \__cv_courses_block:nn #1#2
+  {
+    \par \nobreak \vspace { 0.06 cm }
+    \begin{adjustwidth} { \c__cv_course_indent_dim } { 0 cm }
+      \noindent \uline { \textbf { \textit { Courses~taught } } } \par \nobreak
+      \clist_map_inline:Nn \l__cv_courses_clist
+        {
+          \bool_lazy_and:nnTF
+            { \prop_if_exist_p:c { g__cv_rec_##1_prop } }
+            { \str_if_eq_p:ee { \prop_item:cn { g__cv_rec_##1_prop } { @kind } } { course } }
+            { \__cv_course_item:nn {##1} {#2} }
+            { \msg_error:nnnn { cv-entries } { unknown-course } {#1} {##1} }
+        }
+    \end{adjustwidth}
+  }
+
+% One course: title row, then bullets. Used nested, and by \Name on its own.
+\cs_new_protected:Npn \__cv_course_item:nn #1#2
+  {
+    \__cv_get:nnnN {#1} {#2} { title } \l__cv_title_tl
+    \__cv_get:nnnN {#1} {#2} { type }  \l__cv_type_tl
+    \__cv_get:nnnN {#1} {#2} { @date } \l__cv_date_tl
+    \__cv_fetch_bullets:nn {#1} {#2}
+    \tl_set:Ne \l__cv_title_tl { \exp_not:N \textbf { \exp_not:V \l__cv_title_tl } }
+    \tl_if_empty:NF \l__cv_type_tl
+      { \tl_put_right:Ne \l__cv_title_tl { \c_space_tl ( \exp_not:V \l__cv_type_tl ) } }
+    \par
+    \group_begin:
+      \noindent
+      \parbox [t] { \dim_eval:n { \linewidth - \c__cv_work_date_dim - \columnsep } }
+        { \raggedright \l__cv_title_tl \strut }
+      \hfill
+      \parbox [t] { \c__cv_work_date_dim } { \raggedleft \textbf { \l__cv_date_tl } }
+      \par
+      \prevdepth = \dp \strutbox
+      \nobreak
+    \group_end:
+    \bool_if:NT \l__cv_has_bullets_bool
+      { \__cv_entries:V \l__cv_bullets_tl }
+  }
+\cs_new_protected:Npn \__cv_render_course:nn #1#2
+  {
+    \__cv_gap:
+    \__cv_course_item:nn {#1} {#2}
+  }
+\cs_generate_variant:Nn \__cv_render_course:nn { nV }
+
+% Publications and presentations:
+%   **Title** (type)                                        **date**
+%   authors                                  (full width, like bullets)
+%   venue. note
+% Math in the title is set bold too. The entry never splits across pages.
+% The author list is set one size down (\SetAuthorFont) so the title and the
+% venue line stand out from it.
+\cs_new_protected:Npn \__cv_render_work:nn #1#2
+  {
+    \__cv_get:nnnN {#1} {#2} { title }   \l__cv_title_tl
+    \__cv_get:nnnN {#1} {#2} { type }    \l__cv_type_tl
+    \__cv_get:nnnN {#1} {#2} { authors } \l__cv_authors_tl
+    \__cv_get:nnnN {#1} {#2} { venue }   \l__cv_venue_tl
+    \__cv_get:nnnN {#1} {#2} { note }    \l__cv_note_tl
+    \__cv_get:nnnN {#1} {#2} { @date }   \l__cv_date_tl
+    % title row
+    \tl_set:Ne \l__cv_title_tl
+      { \exp_not:N \textbf { \exp_not:N \boldmath \exp_not:V \l__cv_title_tl } }
+    \tl_if_empty:NF \l__cv_type_tl
+      { \tl_put_right:Ne \l__cv_title_tl { \c_space_tl ( \exp_not:V \l__cv_type_tl ) } }
+    % authors / venue / note
+    \tl_clear:N \l__cv_body_tl
+    \tl_if_empty:NF \l__cv_authors_tl
+      {
+        % own paragraph, so the smaller author font also gets its own leading
+        \tl_put_right:Ne \l__cv_body_tl
+          {
+            { \exp_not:V \g__cv_author_font_tl \exp_not:V \l__cv_authors_tl \exp_not:N \par }
+            \exp_not:N \nobreak
+          }
+      }
+    \tl_put_right:NV \l__cv_body_tl \l__cv_venue_tl
+    \tl_if_empty:NF \l__cv_note_tl
+      {
+        % no doubled period when the venue already ends in one
+        \regex_match:nVTF { \.\s*\Z } \l__cv_venue_tl
+          { \tl_put_right:Ne \l__cv_body_tl { \c_space_tl \exp_not:V \l__cv_note_tl } }
+          { \tl_put_right:Ne \l__cv_body_tl { . \c_space_tl \exp_not:V \l__cv_note_tl } }
+      }
+    \__cv_gap:
+    \__cv_work_rows:VVV \l__cv_date_tl \l__cv_title_tl \l__cv_body_tl
+  }
+% The title row is laid out like the preamble's twocolentry (title left, bold
+% date right-aligned on the same edge), but the date column is 2.2 cm instead
+% of 4.5 cm: these dates are at most "Mon YYYY", and the room goes to the
+% title, which then wraps less. It is built from two top-aligned \parbox'es
+% instead of paracol, because paracol makes its own page decisions and cannot
+% keep an entry with the heading above it. With plain paragraphs, the no-break
+% penalties below keep the whole entry on one page, and titlesec's \nobreak
+% after a heading carries the heading along. (Under the preamble's
+% \raggedright a plain \\ starts a new paragraph, so the authors are their own
+% paragraph with a \nobreak after.)
+% A [t] parbox carries every line after its first as depth, so TeX would set
+% the line below a wrapped title with \lineskip (cramped) and the line below
+% a one-line title with \baselineskip. The \strut and the \prevdepth reset
+% give both cases the same baseline distance.
+\cs_new_protected:Npn \__cv_work_rows:nnn #1#2#3   % date, title row, body
+  {
+    \par
+    \group_begin:
+      \int_set:Nn \interlinepenalty { 10000 }
+      \int_set:Nn \clubpenalty      { 10000 }
+      \int_set:Nn \widowpenalty     { 10000 }
+      \noindent
+      \parbox [t] { \dim_eval:n { \linewidth - \c__cv_work_date_dim - \columnsep } }
+        { \raggedright #2 \strut }
+      \hfill
+      \parbox [t] { \c__cv_work_date_dim } { \raggedleft \textbf {#1} }
+      \par
+      \prevdepth = \dp \strutbox
+      \nobreak
+      #3 \par
+    \group_end:
+  }
+\cs_generate_variant:Nn \__cv_work_rows:nnn { VVV }
+\cs_new_eq:NN \__cv_render_publication:nn  \__cv_render_work:nn
+\cs_new_eq:NN \__cv_render_presentation:nn \__cv_render_work:nn
+\cs_generate_variant:Nn \__cv_render_publication:nn  { nV }
+\cs_generate_variant:Nn \__cv_render_presentation:nn { nV }
+
+% References: **Name**, affiliation --- relationship \\ email | phone
+% ("confirmed" is validated as true/false when the record is defined.)
+\tl_new:N \l__cv_relationship_tl
+\tl_new:N \l__cv_email_tl
+\tl_new:N \l__cv_phone_tl
+\cs_new_protected:Npn \__cv_render_reference:nn #1#2
+  {
+    \__cv_get:nnnN {#1} { full } { confirmed } \l__cv_tmp_tl
+    \str_if_eq:VnTF \l__cv_tmp_tl { true }
+      {
+        \__cv_get:nnnN {#1} { full } { name }         \l__cv_title_tl
+        \__cv_get:nnnN {#1} { full } { affiliation }  \l__cv_org_tl
+        \__cv_get:nnnN {#1} { full } { relationship } \l__cv_relationship_tl
+        \__cv_get:nnnN {#1} { full } { email }        \l__cv_email_tl
+        \__cv_get:nnnN {#1} { full } { phone }        \l__cv_phone_tl
+        \tl_set:Ne \l__cv_body_tl
+          {
+            \exp_not:N \textbf { \exp_not:V \l__cv_title_tl } , ~
+            \exp_not:V \l__cv_org_tl \c_space_tl --- \c_space_tl
+            \exp_not:V \l__cv_relationship_tl
+          }
+        \bool_lazy_and:nnF
+          { \tl_if_empty_p:N \l__cv_email_tl }
+          { \tl_if_empty_p:N \l__cv_phone_tl }
+          {
+            \tl_put_right:Nn \l__cv_body_tl { \\ }
+            \tl_if_empty:NF \l__cv_email_tl
+              {
+                \tl_put_right:Ne \l__cv_body_tl
+                  {
+                    \exp_not:N \hrefWithoutArrow
+                      { mailto: \exp_not:V \l__cv_email_tl } { \exp_not:V \l__cv_email_tl }
+                  }
+              }
+            \bool_lazy_or:nnF
+              { \tl_if_empty_p:N \l__cv_email_tl }
+              { \tl_if_empty_p:N \l__cv_phone_tl }
+              { \tl_put_right:Nn \l__cv_body_tl { \ | \ } }
+            \tl_put_right:NV \l__cv_body_tl \l__cv_phone_tl
+          }
+        \__cv_gap:
+        \__cv_onecol:V \l__cv_body_tl
+      }
+      { \msg_error:nnn { cv-entries } { unconfirmed } {#1} }
+  }
+
+\cs_new_protected:Npn \__cv_render_paragraph:nn #1#2
+  {
+    \__cv_get:nnnN {#1} { full } { @body } \l__cv_body_tl
+    \__cv_gap:
+    \__cv_onecol:V \l__cv_body_tl
+  }
+\cs_new_eq:NN \__cv_render_skills:nn \__cv_render_paragraph:nn
+
+% ------------------------------------------------------------
+% Document-level settings
+% ------------------------------------------------------------
+\NewDocumentCommand \SetEntryForm { m }
+  {
+    \tl_set:Ne \l__cv_tmp_tl { \tl_trim_spaces:n {#1} }
+    \__cv_in:eeTF { \l__cv_tmp_tl } { all_forms }
+      { \tl_gset_eq:NN \g__cv_form_tl \l__cv_tmp_tl }
+      { \msg_error:nnn { cv-entries } { bad-form } {#1} }
+  }
+\NewDocumentCommand \SetEntryGap { m } { \dim_gset:Nn \g__cv_gap_dim {#1} }
+\NewDocumentCommand \SetAuthorFont { m } { \tl_gset:Nn \g__cv_author_font_tl {#1} }
+
+\ExplSyntaxOff
